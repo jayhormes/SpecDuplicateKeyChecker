@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebService Duplicate Spectable Unit Key Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #FFF8E1;
+            color: #5D4037;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #D84315;
+        }
+
+        textarea {
+            width: 90%;
+            max-width: 800px;
+            height: 300px;
+            border: 1px solid #D84315;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            background-color: #FFF3E0;
+            color: #5D4037;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #FF7043;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #D84315;
+        }
+
+        #results {
+            width: 90%;
+            max-width: 800px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #FFFFFF;
+        }
+
+        th, td {
+            border: 1px solid #D84315;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #FFCCBC;
+        }
+
+        td {
+            background-color: #FFE0B2;
+        }
+
+        p {
+            font-size: 16px;
+            color: #5D4037;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebService Duplicate Spectable Unit Key Checker</h1>
+    <textarea id="xmlInput" placeholder="Paste your XML here"></textarea>
+    <br>
+    <button onclick="checkDuplicates()">Submit</button>
+    <div id="results"></div>
+
+    <script>
+        function checkDuplicates() {
+            const xmlInput = document.getElementById('xmlInput').value;
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlInput, "text/xml");
+            
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                document.getElementById('results').innerHTML = "<p style='color: red;'>Invalid XML format!</p>";
+                return;
+            }
+
+            const ptbTestSpecs = xmlDoc.getElementsByTagName("PtbTestSpec3_0_2");
+            const keySet = new Map();
+
+            for (let i = 0; i < ptbTestSpecs.length; i++) {
+                const spec = ptbTestSpecs[i];
+                const productType = spec.getElementsByTagName("productType")[0]?.textContent.trim() || "";
+                const testName = spec.getElementsByTagName("testName")[0]?.textContent.trim() || "";
+                const testItem = spec.getElementsByTagName("testItem")[0]?.textContent.trim() || "";
+                const ch = spec.getElementsByTagName("ch")[0]?.textContent.trim() || "";
+                const frequency = spec.getElementsByTagName("frequency")[0]?.textContent.trim() || "";
+                const demod = spec.getElementsByTagName("demod")[0]?.textContent.trim() || "";
+                const rate = spec.getElementsByTagName("rate")[0]?.textContent.trim() || "";
+                const ants = spec.getElementsByTagName("ants")[0]?.textContent.trim() || "";
+
+                const key = `${productType}|${testName}|${testItem}|${ch}|${frequency}|${demod}|${rate}|${ants}`;
+
+                if (keySet.has(key)) {
+                    keySet.set(key, keySet.get(key) + 1);
+                } else {
+                    keySet.set(key, 1);
+                }
+            }
+
+            const duplicates = Array.from(keySet).filter(([key, count]) => count > 1);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = "";
+
+            if (duplicates.length > 0) {
+                const table = document.createElement("table");
+                const headerRow = table.insertRow();
+                headerRow.insertCell(0).textContent = "Duplicate Key";
+                headerRow.insertCell(1).textContent = "Count";
+
+                duplicates.forEach(([key, count]) => {
+                    const row = table.insertRow();
+                    row.insertCell(0).textContent = key;
+                    row.insertCell(1).textContent = count;
+                });
+
+                resultsDiv.appendChild(table);
+            } else {
+                resultsDiv.innerHTML = "<p>No duplicates found!</p>";
+            }
+        }
+    </script>
+</body>
+</html>
